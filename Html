@@ -1,0 +1,59 @@
+TASK-1(TITANIC SURVIVAL PREDICTION)
+# Step 1: Import libraries
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, confusion_matrix
+
+# Step 2: Load the dataset
+# You can use the Titanic dataset from Seaborn for simplicity
+df = sns.load_dataset('titanic')
+
+# Step 3: Data Exploration
+print(df.head())
+print(df.info())
+print(df.describe())
+
+# Step 4: Data Cleaning
+# Handle missing values by either filling them or dropping columns
+df['age'].fillna(df['age'].median(), inplace=True)
+df['embarked'].fillna(df['embarked'].mode()[0], inplace=True)
+df.drop(columns=['deck', 'embark_town', 'alive'], inplace=True)  # Dropping irrelevant columns
+
+# Step 5: Encoding categorical features
+label = LabelEncoder()
+df['sex'] = label.fit_transform(df['sex'])
+df['embarked'] = label.fit_transform(df['embarked'])
+
+# Drop rows with remaining NaN values
+df.dropna(inplace=True)
+
+# Step 6: Splitting the data
+X = df.drop(columns=['survived'])
+y = df['survived']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Step 7: Training the model
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+
+# Step 8: Making predictions
+y_pred = model.predict(X_test)
+
+# Step 9: Evaluating the model
+accuracy = accuracy_score(y_test, y_pred)
+conf_matrix = confusion_matrix(y_test, y_pred)
+
+print(f"Accuracy: {accuracy}")
+print(f"Confusion Matrix: \n{conf_matrix}")
+
+# Optional: Visualizing the importance of each feature
+plt.figure(figsize=(10, 6))
+sns.barplot(x=model.feature_importances_, y=X.columns)
+plt.title('Feature Importance')
+plt.show()
+
