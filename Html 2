@@ -1,0 +1,99 @@
+      TASK-2(CREDIT CARD FRAUD DETECTION)
+1. Data Preparation
+You will need a dataset that contains transaction records, including whether each transaction was fraudulent or not. A popular dataset is the Kaggle Credit Card Fraud Dataset.
+
+Steps:
+Download the dataset.
+Load and inspect the dataset.
+import pandas as pd
+
+# Load the dataset
+data = pd.read_csv('creditcard.csv')
+
+# Check the dataset structure
+print(data.head())
+print(data.info())
+Features: The dataset has numerical features V1, V2, ..., V28, which are the result of a PCA transformation for privacy, along with Time (the time since the first transaction) and Amount (the transaction amount).
+Target: The Class column indicates whether the transaction is fraud (1) or non-fraud (0).
+2. Exploratory Data Analysis (EDA)
+Before building the model, it's important to understand the data distribution and handle any imbalances.
+# Check for class imbalance
+print(data['Class'].value_counts())
+
+# Visualize the class distribution
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+sns.countplot(x='Class', data=data)
+plt.show()
+As expected, the dataset will be highly imbalanced since fraudulent transactions are rare.
+3. Data Preprocessing
+You need to prepare the data for modeling, including scaling the features, handling class imbalance, and splitting the data.
+Scaling:
+from sklearn.preprocessing import StandardScaler
+
+# Scaling the 'Amount' and 'Time' columns
+scaler = StandardScaler()
+data['scaled_amount'] = scaler.fit_transform(data['Amount'].values.reshape(-1, 1))
+data['scaled_time'] = scaler.fit_transform(data['Time'].values.reshape(-1, 1))
+
+# Drop original columns
+data.drop(['Amount', 'Time'], axis=1, inplace=True)
+Splitting the Data:
+You can split the data into training and testing sets
+from sklearn.model_selection import train_test_split
+
+# Features and target
+X = data.drop('Class', axis=1)
+y = data['Class']
+
+# Split the dataset
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42, stratify=y)
+4. Handling Imbalanced Data
+Since the data is imbalanced, you can use techniques like SMOTE (Synthetic Minority Oversampling Technique) to balance the classes.
+from imblearn.over_sampling import SMOTE
+
+# Handle class imbalance using SMOTE
+smote = SMOTE(random_state=42)
+X_train_res, y_train_res = smote.fit_resample(X_train, y_train)
+5. Building a Machine Learning Model
+You can now build a machine learning model using algorithms like Logistic Regression, Random Forest, or XGBoost. We'll use Logistic Regression as an example.
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+
+# Build the logistic regression model
+model = LogisticRegression(solver='lbfgs', max_iter=1000, random_state=42)
+model.fit(X_train_res, y_train_res)
+
+# Predict on the test set
+y_pred = model.predict(X_test)
+# Evaluation
+print(confusion_matrix(y_test, y_pred))
+print(classification_report(y_test, y_pred))
+print("Accuracy: ", accuracy_score(y_test,y_pred))
+6. Evaluating the Model
+Use evaluation metrics that are more relevant to imbalanced datasets:
+
+Confusion Matrix: To see how many frauds are caught and how many legitimate transactions are flagged incorrectly.
+Precision, Recall, and F1-Score: These metrics are more meaningful than accuracy for imbalanced datasets.
+ROC Curve: Plot the ROC curve to see the performance at different thresholds.
+from sklearn.metrics import roc_auc_score, roc_curve
+
+# Calculate the ROC AUC score
+roc_auc = roc_auc_score(y_test, y_pred)
+print(f"ROC AUC Score: {roc_auc}")
+
+# Plot the ROC curve
+fpr, tpr, thresholds = roc_curve(y_test, model.predict_proba(X_test)[:,1])
+plt.plot(fpr, tpr, label=f'AUC = {roc_auc:.2f}')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver Operating Characteristic')
+plt.legend(loc='lower right')
+plt.show()
+7. Improving the Model
+Try Different Algorithms: Test Random Forest, XGBoost, or Gradient Boosting to see if they improve performance.
+Feature Engineering: Create additional features (e.g., transaction frequency, cardholder location, etc.).
+Hyperparameter Tuning: Use Grid Search or Random Search to optimize model hyperparameters.
+8. Deploying the Model
+Once the model is performing well, you can deploy it to production. In a real-world system, the model will need to run in real-time, handling incoming transactions and flagging suspicious ones for further investigation.
